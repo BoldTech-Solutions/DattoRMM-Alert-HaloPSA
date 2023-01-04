@@ -44,7 +44,7 @@ function Get-DRMMAlertDetailsSection {
     } else {
         $DocLinkHTML = ''
     }
-    
+
     $Colour = Get-DRMMAlertColour -Piority $Alert.Priority
 
     $SectionHTML = @"
@@ -59,9 +59,9 @@ function Get-DRMMAlertDetailsSection {
             $($Alert.diagnostics)
             </p>
             <br />
-            <h3>Troubleshooting:</h3>
+            <!--<h3>Troubleshooting:</h3>
             <p style="margin: 0 0 10px;">$($AlertTroubleshooting)</p>
-            <br />
+            <br />-->
         </td>
     </tr>
 
@@ -99,13 +99,13 @@ function Get-DRMMAlertDetailsSection {
         </td>
     </tr>
 
-    
+
     <!-- Alert Details HTML End -->
 "@
 
 
     $AlertDetailsSection = @{
-        Heading = "Alert Details"
+        Heading = 'Alert Details'
         HTML    = $SectionHTML
     }
 
@@ -161,7 +161,7 @@ function Get-DRMMDeviceDetailsSection {
 "@
 
     $DeviceDetailsSection = @{
-        Heading = "Device Details"
+        Heading = 'Device Details'
         HTML    = $DeviceDetailsHtml
     }
 
@@ -183,16 +183,16 @@ function Get-DRMMDeviceStatusSection {
     )
 
     # Generate CPU/ RAM Use Data
-    $CPUData = $Device.udf."udf$CPUUDF" | convertfrom-json
-    $RAMData = $Device.udf."udf$RAMUDF" | convertfrom-json
+    $CPUData = $Device.udf."udf$CPUUDF" | ConvertFrom-Json
+    $RAMData = $Device.udf."udf$RAMUDF" | ConvertFrom-Json
 
     $CPUUse = $CPUData.T
     $RAMUse = $RAMData.T
 
-    $CPUTable = Get-DecodedTable -TableString $CPUData.D -UseValue '%' | convertto-html -Fragment
-    $RAMTable = Get-DecodedTable -TableString $RAMData.D -UseValue 'GBs' | convertto-html -Fragment
+    $CPUTable = Get-DecodedTable -TableString $CPUData.D -UseValue '%' | ConvertTo-Html -Fragment
+    $RAMTable = Get-DecodedTable -TableString $RAMData.D -UseValue 'GBs' | ConvertTo-Html -Fragment
 
-    $DiskData = $DeviceAudit.logicalDisks | where-object { $_.freespace }
+    $DiskData = $DeviceAudit.logicalDisks | Where-Object { $_.freespace }
 
     # Build the HTML for Disk Usage
     $DiskRaw = foreach ($Disk in $DiskData) {
@@ -261,12 +261,12 @@ function Get-DRMMDeviceStatusSection {
             </div>
             </td>
         </tr>
-        <!-- Device Status : END -->        
+        <!-- Device Status : END -->
 
 "@
 
     $DeviceStatusSection = @{
-        Heading = "Device Status"
+        Heading = 'Device Status'
         HTML    = $DeviceStatusHTML
     }
 
@@ -279,9 +279,9 @@ function Get-DRMMAlertHistorySection {
     This function returns the HTML for the alert history section.
     #>
     param(
-        $Sections,    
+        $Sections,
         $Alert,
-        $DattoPlatform      
+        $DattoPlatform
     )
 
     $AlertsTableStyle = '<table style="border-width: 1px; border-style: solid; border-color: white; border-collapse: collapse; table-layout: auto !important;" width=100%>'
@@ -291,35 +291,35 @@ function Get-DRMMAlertHistorySection {
     $DeviceOpenAlerts = Get-DrmmDeviceOpenAlerts -deviceUid $Alert.alertSourceInfo.deviceUid
     $DeviceResolvedAlerts = Get-DrmmDeviceResolvedAlerts -deviceUid $Alert.alertSourceInfo.deviceUid
 
-    $DeviceOpenAlerts | foreach-object { $null = $AllAlerts.add($_) }
-    $DeviceResolvedAlerts | foreach-object { $null = $AllAlerts.add($_) }
+    $DeviceOpenAlerts | ForEach-Object { $null = $AllAlerts.add($_) }
+    $DeviceResolvedAlerts | ForEach-Object { $null = $AllAlerts.add($_) }
 
-    $XValues = @("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23")
-    $YValues = @("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+    $XValues = @('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23')
+    $YValues = @('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
 
-    $AlertDates = $AllAlerts.timestamp | Foreach-Object { [datetime]$origin = '1970-01-01 00:00:00'; $origin.AddMilliSeconds($_) }
+    $AlertDates = $AllAlerts.timestamp | ForEach-Object { [datetime]$origin = '1970-01-01 00:00:00'; $origin.AddMilliSeconds($_) }
 
     $ParsedDates = $AlertDates | ForEach-Object { "$($_.dayofweek)$($_.hour)" }
 
     $HTMLHeatmapTable = Get-Heatmap -InputData $ParsedDates -XValues $XValues -YValues $YValues
 
 
-    $ParsedOpenAlerts = $DeviceOpenAlerts | select-object @{n = 'View'; e = { "<a class=`"button-a button-a-primary`" target=`"_blank`" href=`"https://$($DattoPlatform)rmm.centrastage.net/alert/$($_.alertUid)`" style=`"background: #333333; border: 1px solid #000000; font-family: sans-serif; font-size: 15px; line-height: 15px; text-decoration: none; padding: 13px 17px; color: #ffffff; display: block; border-radius: 4px;`">View</a>" } },
+    $ParsedOpenAlerts = $DeviceOpenAlerts | Select-Object @{n = 'View'; e = { "<a class=`"button-a button-a-primary`" target=`"_blank`" href=`"https://$($DattoPlatform)rmm.centrastage.net/alert/$($_.alertUid)`" style=`"background: #333333; border: 1px solid #000000; font-family: sans-serif; font-size: 15px; line-height: 15px; text-decoration: none; padding: 13px 17px; color: #ffffff; display: block; border-radius: 4px;`">View</a>" } },
     @{n = 'Priority'; e = { $_.priority } },
     @{n = 'Created'; e = { $([datetime]$origin = '1970-01-01 00:00:00'; $origin.AddMilliSeconds($_.timestamp)) } },
     @{n = 'Type'; e = { $AlertTypesLookup[$_.alertContext.'@class'] } },
     @{n = 'Description'; e = { Get-AlertDescription -Alert $_ } }
 
-    $HTMLOpenAlerts = $ParsedOpenAlerts | Sort-Object Created -desc | convertto-html -Fragment
+    $HTMLOpenAlerts = $ParsedOpenAlerts | Sort-Object Created -desc | ConvertTo-Html -Fragment
     $HTMLParsedOpenAlerts = [System.Web.HttpUtility]::HtmlDecode(((($HTMLOpenAlerts) -replace '<table>', $AlertsTableStyle) -replace '<td>', $AlertsTableTDStyle))
 
-    $ParsedResolvedAlerts = $DeviceResolvedAlerts | select-object @{n = 'View'; e = { "<a class=`"button-a button-a-primary`" target=`"_blank`" href=`"https://$($DattoPlatform)rmm.centrastage.net/alert/$($_.alertUid)`" style=`"background: #333333; border: 1px solid #000000; font-family: sans-serif; font-size: 15px; line-height: 15px; text-decoration: none; padding: 13px 17px; color: #ffffff; display: block; border-radius: 4px;`">View</a>" } },
+    $ParsedResolvedAlerts = $DeviceResolvedAlerts | Select-Object @{n = 'View'; e = { "<a class=`"button-a button-a-primary`" target=`"_blank`" href=`"https://$($DattoPlatform)rmm.centrastage.net/alert/$($_.alertUid)`" style=`"background: #333333; border: 1px solid #000000; font-family: sans-serif; font-size: 15px; line-height: 15px; text-decoration: none; padding: 13px 17px; color: #ffffff; display: block; border-radius: 4px;`">View</a>" } },
     @{n = 'Priority'; e = { $_.priority } },
     @{n = 'Created'; e = { $([datetime]$origin = '1970-01-01 00:00:00'; $origin.AddMilliSeconds($_.timestamp)) } },
     @{n = 'Type'; e = { $AlertTypesLookup[$_.alertContext.'@class'] } },
     @{n = 'Description'; e = { Get-AlertDescription -Alert $_ } }
 
-    $HTMLResolvedAlerts = $ParsedResolvedAlerts | Sort-Object Created -desc | select-object -first 10 | convertto-html -Fragment
+    $HTMLResolvedAlerts = $ParsedResolvedAlerts | Sort-Object Created -desc | Select-Object -First 10 | ConvertTo-Html -Fragment
     $HTMLParsedResolvedAlerts = [System.Web.HttpUtility]::HtmlDecode(((($HTMLResolvedAlerts) -replace '<table>', $AlertsTableStyle) -replace '<td>', $AlertsTableTDStyle))
 
     $AlertHistoryHTML = @"
@@ -328,7 +328,7 @@ function Get-DRMMAlertHistorySection {
         <td
             style="padding: 10px 10px 0px 10px; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #ffffff;">
             <h3>Open Alerts</h3>
-    
+
             $($HTMLParsedOpenAlerts)
             <br />
             <h3>Recent Resolved Alerts</h3>
@@ -347,14 +347,14 @@ function Get-DRMMAlertHistorySection {
     </tr>
     <!-- Alert Details : END -->
 "@
-    
+
     $AlertHistorySection = @{
-        Heading = "Alert History"
+        Heading = 'Alert History'
         HTML    = $AlertHistoryHTML
     }
-    
+
     $Sections.add($AlertHistorySection)
-    
+
 
 
 }
