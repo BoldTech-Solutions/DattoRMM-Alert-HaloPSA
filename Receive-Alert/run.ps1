@@ -152,11 +152,8 @@ if ($Email) {
 
     }
 
-    Write-Host 'HaloTicketCreate:'
-    $HaloTicketCreate
     $Ticket = New-HaloTicket -Ticket $HaloTicketCreate
-    Write-Host 'Ticket'
-    $Ticket
+
     $ActionUpdate = @{
         id                = 1
         ticket_id         = $Ticket.id
