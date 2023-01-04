@@ -56,6 +56,8 @@ if ($Email) {
     $ParsedAlertType = Get-AlertHaloType -Alert $Alert -AlertMessage $AlertWebhook.alertMessage
 
     $HaloDevice = Invoke-HaloReport -Report $HaloDeviceReport -IncludeReport | Where-Object { $_.DDattoID -eq $Alert.alertSourceInfo.deviceUid }
+    $HaloAsset = Get-HaloAsset -AssetID $HaloDevice.did
+    $HaloUser = Get-HaloUser -SiteID $HaloAsset.site_id | Where-Object { $_.firstname -eq 'General' -and $_.surname -eq 'User' }
 
     $HaloAlertsReportBase = @{
         name                    = 'Datto RMM Improved Alerts PowerShell Function - Alerts Report'
@@ -106,6 +108,8 @@ if ($Email) {
         gfialerttype     = $AlertID
         DattoAlertState  = 0
         site_id          = $HaloDevice.dsite
+        client_id        = $HaloAsset.client_id
+        user_id          = $HaloUser.id
         assets           = @(@{id = $HaloDevice.did })
         priority_id      = $HaloPriority
         status_id        = $HaloTicketStatusID
