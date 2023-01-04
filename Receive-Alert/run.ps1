@@ -28,26 +28,26 @@ $HaloAlertHistoryDays = 90
 
 
 $PriorityHaloMap = @{
-    "Critical"    = "1"
-    "High"        = "2"
-    "Moderate"    = "3"
-    "Low"         = "4"
-    "Information" = "4"
+    'Critical'    = '1'
+    'High'        = '2'
+    'Moderate'    = '3'
+    'Low'         = '4'
+    'Information' = '4'
 }
 
-$AlertWebhook = $Request.RawBody | convertfrom-json -depth 100
+$AlertWebhook = $Request.RawBody | ConvertFrom-Json -Depth 100
 
 $Email = Get-AlertEmailBody -AlertWebhook $AlertWebhook
 
 if ($Email) {
     $Alert = $Email.Alert
 
-    Connect-HaloAPI -URL $HaloURL -ClientId $HaloClientID -ClientSecret $HaloClientSecret -Scopes "all"
-    
+    Connect-HaloAPI -URL $HaloURL -ClientID $HaloClientID -ClientSecret $HaloClientSecret -Scopes 'all'
+
     $HaloDeviceReport = @{
-        name                    = "Datto RMM Improved Alerts PowerShell Function - Device Report"
-        sql                     = "Select did, Dsite, DDattoID, DDattoAlternateId from device"
-        description             = "This report is used to quickly obtain device mapping information for use with the improved Datto RMM Alerts Function"
+        name                    = 'Datto RMM Improved Alerts PowerShell Function - Device Report'
+        sql                     = 'Select did, Dsite, DDattoID, DDattoAlternateId from device'
+        description             = 'This report is used to quickly obtain device mapping information for use with the improved Datto RMM Alerts Function'
         type                    = 0
         datasource_id           = 0
         canbeaccessedbyallusers = $false
@@ -55,12 +55,12 @@ if ($Email) {
 
     $ParsedAlertType = Get-AlertHaloType -Alert $Alert -AlertMessage $AlertWebhook.alertMessage
 
-    $HaloDevice = Invoke-HaloReport -Report $HaloDeviceReport -IncludeReport | where-object { $_.DDattoID -eq $Alert.alertSourceInfo.deviceUid }
+    $HaloDevice = Invoke-HaloReport -Report $HaloDeviceReport -IncludeReport | Where-Object { $_.DDattoID -eq $Alert.alertSourceInfo.deviceUid }
 
     $HaloAlertsReportBase = @{
-        name                    = "Datto RMM Improved Alerts PowerShell Function - Alerts Report"
-        sql                     = "SELECT Faultid, Symptom, tstatusdesc, dateoccured, inventorynumber, FGFIAlertType, CFDattoAlertType, fxrefto as ParentID, fcreatedfromid as RelatedID FROM FAULTS inner join TSTATUS on Status = Tstatus Where CFDattoAlertType is not null and fdeleted <> 1"
-        description             = "This report is used to quickly obtain alert information for use with the improved Datto RMM Alerts Function"
+        name                    = 'Datto RMM Improved Alerts PowerShell Function - Alerts Report'
+        sql                     = 'SELECT Faultid, Symptom, tstatusdesc, dateoccured, inventorynumber, FGFIAlertType, CFDattoAlertType, fxrefto as ParentID, fcreatedfromid as RelatedID FROM FAULTS inner join TSTATUS on Status = Tstatus Where CFDattoAlertType is not null and fdeleted <> 1'
+        description             = 'This report is used to quickly obtain alert information for use with the improved Datto RMM Alerts Function'
         type                    = 0
         datasource_id           = 0
         canbeaccessedbyallusers = $false
@@ -78,20 +78,20 @@ if ($Email) {
             }
         )
         _loadreportonly          = $true
-        reportingperiodstartdate = get-date(((Get-date).ToUniversalTime()).adddays(-$HaloAlertHistoryDays)) -UFormat '+%Y-%m-%dT%H:%M:%SZ'
-        reportingperiodenddate   = get-date((Get-date -Hour 23 -Minute 59 -second 59).ToUniversalTime()) -UFormat '+%Y-%m-%dT%H:%M:%SZ'
-        reportingperioddatefield = "dateoccured"
-        reportingperiod          = "7"
+        reportingperiodstartdate = Get-Date(((Get-Date).ToUniversalTime()).adddays(-$HaloAlertHistoryDays)) -UFormat '+%Y-%m-%dT%H:%M:%SZ'
+        reportingperiodenddate   = Get-Date((Get-Date -Hour 23 -Minute 59 -Second 59).ToUniversalTime()) -UFormat '+%Y-%m-%dT%H:%M:%SZ'
+        reportingperioddatefield = 'dateoccured'
+        reportingperiod          = '7'
     }
 
     $ReportResults = (Set-HaloReport -Report $AlertReportFilter).report.rows
 
-    $ReoccuringHistory = $ReportResults | where-object { $_.CFDattoAlertType -eq $ParsedAlertType } 
-    
-    $ReoccuringAlerts = $ReoccuringHistory | where-object { $_.dateoccured -gt ((Get-Date).addhours(-$ReoccurringTicketHours)) }
+    $ReoccuringHistory = $ReportResults | Where-Object { $_.CFDattoAlertType -eq $ParsedAlertType }
 
-    $RelatedAlerts = $ReportResults | where-object { $_.dateoccured -gt ((Get-Date).addminutes(-$RelatedAlertMinutes)).ToUniversalTime() -and $_.CFDattoAlertType -ne $ParsedAlertType }
-        
+    $ReoccuringAlerts = $ReoccuringHistory | Where-Object { $_.dateoccured -gt ((Get-Date).addhours(-$ReoccurringTicketHours)) }
+
+    $RelatedAlerts = $ReportResults | Where-Object { $_.dateoccured -gt ((Get-Date).addminutes(-$RelatedAlertMinutes)).ToUniversalTime() -and $_.CFDattoAlertType -ne $ParsedAlertType }
+
     $TicketSubject = $Email.Subject
 
     $HTMLBody = $Email.Body
@@ -104,7 +104,7 @@ if ($Email) {
         inventory_number = $HaloDevice.did
         details_html     = $HtmlBody
         gfialerttype     = $AlertID
-        DattoAlertState = 0
+        DattoAlertState  = 0
         site_id          = $HaloDevice.dsite
         assets           = @(@{id = $HaloDevice.did })
         priority_id      = $HaloPriority
@@ -119,24 +119,24 @@ if ($Email) {
 
 
     # Handle reoccurring alerts
-    if ($ReoccuringAlerts) {        
+    if ($ReoccuringAlerts) {
         $ReoccuringAlertParent = $ReoccuringAlerts | Sort-Object FaultID | Select-Object -First 1
-                
+
         if ($ReoccuringAlertParent.ParentID) {
             $ParentID = $ReoccuringAlertParent.ParentID
         } else {
             $ParentID = $ReoccuringAlertParent.FaultID
         }
-        
+
         $RecurringUpdate = @{
             id        = $ParentID
-            status_id = $HaloReocurringStatus   
+            status_id = $HaloReocurringStatus
         }
 
         $null = Set-HaloTicket -Ticket $RecurringUpdate
 
         $HaloTicketCreate.add('parent_id', $ParentID)
-        
+
     } elseif ($RelatedAlerts) {
         $RelatedAlertsParent = $RelatedAlerts | Sort-Object FaultID | Select-Object -First 1
 
@@ -145,20 +145,21 @@ if ($Email) {
         } else {
             $CreatedFromID = $RelatedAlertsParent.FaultID
         }
-        
+
         $HaloTicketCreate.add('createdfrom_id', $CreatedFromID)
 
-    } 
+    }
 
-
-     
+    Write-Host 'HaloTicketCreate:'
+    $HaloTicketCreate
     $Ticket = New-HaloTicket -Ticket $HaloTicketCreate
-
+    Write-Host 'Ticket'
+    $Ticket
     $ActionUpdate = @{
         id                = 1
         ticket_id         = $Ticket.id
         important         = $true
-        action_isresponse = $true      
+        action_isresponse = $true
     }
 
     $Null = Set-HaloAction -Action $ActionUpdate
@@ -172,10 +173,10 @@ if ($Email) {
         }
         $Null = New-HaloAction -Action $ActionResolveUpdate
     }
-    
+
 
 } else {
-    Write-Host "No alert found"
+    Write-Host 'No alert found'
 }
 
 
